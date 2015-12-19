@@ -11,3 +11,4 @@
 
 ###NOTE
 1. lwIP (v1.4.1) misses sem_wait symbol definition, build failure !!!
+2. daytime server, telnet (port 13) does not work while ping is OK !!!
