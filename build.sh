@@ -6,12 +6,14 @@ set -e
 [ -d /local/build ] || mkdir -p /local/build
 cd /local/build
 git clone git://xenbits.xen.org/mini-os.git
-wget http://download.savannah.gnu.org/releases/lwip/lwip-1.4.1.zip
-unzip lwip-1.4.1.zip
+wget http://download.savannah.gnu.org/releases/lwip/older_versions/lwip-1.3.2.zip
+unzip lwip-1.3.2.zip
 
-#build
+#build net app_main (without libc)
 cd /local/build/mini-os
-make -I /local/build/lwip-1.4.1/src/include
+make LWIPDIR=/local/build/lwip-1.3.2
+
+#build main (with libc)
 
 #pack
 

@@ -9,4 +9,4 @@
 2. deploy a mini-os VM by invocation of "xl create mini-os.cfg"
 
 ###NOTE
-1. lwIP misses sem_wait symbol definition, build failure !!!
+1. lwIP (v1.4.1) misses sem_wait symbol definition, build failure !!!
