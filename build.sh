@@ -11,6 +11,7 @@ unzip lwip-1.3.2.zip
 
 #build net app_main (without libc)
 cd /local/build/mini-os
+patch -p1 < mini-os-patch/daytime-server-listen-address.patch
 make LWIPDIR=/local/build/lwip-1.3.2
 
 #build main (with libc)

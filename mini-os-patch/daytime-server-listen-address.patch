@@ -1,0 +1,15 @@
+diff --git a/lwip-net.c b/lwip-net.c
+index 449b70f..dc73234 100644
+--- a/lwip-net.c
++++ b/lwip-net.c
+@@ -68,8 +68,8 @@
+ #define IFNAME0 'e'
+ #define IFNAME1 'n'
+ 
+-#define IF_IPADDR	0x00000000
+-#define IF_NETMASK	0x00000000
++#define IF_IPADDR       0xc0a80164  //addr: 192.168.1.100
++#define IF_NETMASK	0xffffff00  //mask: 255.255.255.0
+ 
+ /* Only have one network interface at a time. */
+ static struct netif *the_interface = NULL;
