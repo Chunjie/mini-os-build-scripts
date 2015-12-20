@@ -11,7 +11,8 @@ unzip lwip-1.3.2.zip
 
 #build net app_main (without libc)
 cd /local/build/mini-os
-patch -p1 < mini-os-patch/daytime-server-listen-address.patch
+git apply mini-os-patch/0001-add-a-global-system-monitor-thread.patch
+git apply mini-os-patch/0002-set-a-global-ip-address.patch
 make LWIPDIR=/local/build/lwip-1.3.2
 
 #build main (with libc)

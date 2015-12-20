@@ -1,0 +1,27 @@
+From acb9fce011c18b84edc0ec1f059b588e83ba6c84 Mon Sep 17 00:00:00 2001
+From: Chunjie Zhu <chunjie.zhu@xxx.com>
+Date: Sun, 20 Dec 2015 02:23:10 -0500
+Subject: [PATCH 2/2] set a global ip address
+
+---
+ lwip-net.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/lwip-net.c b/lwip-net.c
+index 449b70f..672e8ee 100644
+--- a/lwip-net.c
++++ b/lwip-net.c
+@@ -68,8 +68,8 @@
+ #define IFNAME0 'e'
+ #define IFNAME1 'n'
+ 
+-#define IF_IPADDR	0x00000000
+-#define IF_NETMASK	0x00000000
++#define IF_IPADDR      0xc0a80164  //addr: 192.168.1.100
++#define IF_NETMASK     0xffffff00  //mask: 255.255.255.0
+ 
+ /* Only have one network interface at a time. */
+ static struct netif *the_interface = NULL;
+-- 
+1.7.1
+
