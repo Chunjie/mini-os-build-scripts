@@ -1,0 +1,124 @@
+From f79dd7bd1d1d6fd5343c705df8d75fda5dd1da73 Mon Sep 17 00:00:00 2001
+From: Chunjie Zhu <chunjie.zhu@xxx.com>
+Date: Thu, 24 Dec 2015 11:36:05 -0500
+Subject: [PATCH 3/3] add key handler to display system status
+
+---
+ Makefile      |    1 +
+ interactive.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel.c      |    3 +++
+ sched.c       |    2 +-
+ 4 files changed, 61 insertions(+), 1 deletions(-)
+ create mode 100644 interactive.c
+
+diff --git a/Makefile b/Makefile
+index 73dc508..6ca810b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -84,6 +84,7 @@ src-$(CONFIG_TPM_TIS) += tpm_tis.c
+ src-$(CONFIG_TPMBACK) += tpmback.c
+ src-y += daytime.c
+ src-y += system-monitor.c
++src-y += interactive.c
+ src-y += events.c
+ src-$(CONFIG_FBFRONT) += fbfront.c
+ src-y += gntmap.c
+diff --git a/interactive.c b/interactive.c
+new file mode 100644
+index 0000000..0c869b7
+--- /dev/null
++++ b/interactive.c
+@@ -0,0 +1,56 @@
++#include <console.h>
++#include <lib.h>
++
++#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
++
++extern void print_runqueue(void);
++
++typedef struct _key_handler_t {
++    unsigned char key;
++    void (*op)(unsigned char key);
++} key_handler_t;
++
++key_handler_t dummy_handler = {0, NULL};
++
++static void monitor(unsigned char key)
++{
++    print_runqueue();
++}
++
++static void manual(unsigned char key)
++{
++    printk("'h' pressed -> showing installed handlers \n");
++}
++
++static key_handler_t key_handlers[256];
++
++static void register_keyhandler(key_handler_t *handler, unsigned char key, void (*op)(unsigned char key))
++{
++    handler->key = key;
++    handler->op = op;
++}
++
++void init_key_handlers(void)
++{
++    int i = 0;
++    for (i = 0; i < ARRAY_SIZE(key_handlers); i++)
++    {
++        memcpy(&key_handlers[i], &dummy_handler, sizeof(key_handler_t));
++    }
++    register_keyhandler(&key_handlers['m'], 'm', monitor);
++    register_keyhandler(&key_handlers['h'], 'h', manual);
++}
++
++void console_input(char * buffer, unsigned len)
++{
++    unsigned char key = buffer[0];
++    switch(key) {
++        case 'm':
++        case 'h':
++            key_handlers[key].op(key);
++            break;
++        default:
++            printk("Unknown key pressed \n");
++            break;
++    }
++}
+diff --git a/kernel.c b/kernel.c
+index 3ff74c0..b2d84fa 100644
+--- a/kernel.c
++++ b/kernel.c
+@@ -50,6 +50,7 @@
+ uint8_t xen_features[XENFEAT_NR_SUBMAPS * 32];
+ 
+ extern void resource_usage_monitor(void *);
++extern void init_key_handlers(void);
+ 
+ void setup_xen_features(void)
+ {
+@@ -145,6 +146,8 @@ void start_kernel(void)
+     /* Init XenBus */
+     init_xenbus();
+ 
++    init_key_handlers();
++
+ #ifdef CONFIG_XENBUS
+     create_thread("shutdown", shutdown_thread, NULL);
+ #endif
+diff --git a/sched.c b/sched.c
+index 2bdb277..327153e 100644
+--- a/sched.c
++++ b/sched.c
+@@ -63,7 +63,7 @@ static int threads_started;
+ 
+ struct thread *main_thread;
+ 
+-void inline print_runqueue(void)
++void print_runqueue(void)
+ {
+     struct thread *th;
+     MINIOS_TAILQ_FOREACH(th, &thread_list, thread_list)
+-- 
+1.7.1
+
