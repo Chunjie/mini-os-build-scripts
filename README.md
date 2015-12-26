@@ -12,3 +12,4 @@
 ###NOTE
 1. lwIP (v1.4.1) misses sem_wait symbol definition, build failure !!!
 2. daytime server, telnet (port 13) does not work while ping is OK !!! lwip tcp_input would verify tcp header checksum, but netrfront/netback would not calculate/verify checksum, this causes lwip all tcp packets dropped.
+3. tprintk cannot be used inside evtchn (pv irq) handler because this function access 'current' variable

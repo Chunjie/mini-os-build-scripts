@@ -1,0 +1,207 @@
+From 758d5e4c47b4294538f11f3a0dc9381b856d3981 Mon Sep 17 00:00:00 2001
+From: Chunjie Zhu <chunjie.zhu@xxx.com>
+Date: Sat, 26 Dec 2015 05:47:59 -0500
+Subject: [PATCH] add network configuration dump keyhandler
+
+---
+ include/netfront.h |    4 +++
+ interactive.c      |   69 +++++++++++++++++++++++++++++++++++++++-------------
+ lwip-net.c         |   29 ++++++++++++++++++++-
+ 3 files changed, 83 insertions(+), 19 deletions(-)
+
+diff --git a/include/netfront.h b/include/netfront.h
+index fced785..625b1a1 100644
+--- a/include/netfront.h
++++ b/include/netfront.h
+@@ -2,6 +2,10 @@
+ #ifdef HAVE_LWIP
+ #include <lwip/netif.h>
+ #endif
++
++#define NETIF0_NAME   "en0"
++#define NETIF1_NAME   "en1"
++
+ struct netfront_dev;
+ struct netfront_dev *init_netfront(char *nodename, void (*netif_rx)(unsigned char *data, int len), unsigned char rawmac[6], char **ip);
+ void netfront_xmit(struct netfront_dev *dev, unsigned char* data,int len);
+diff --git a/interactive.c b/interactive.c
+index 0c869b7..133b3f8 100644
+--- a/interactive.c
++++ b/interactive.c
+@@ -1,33 +1,64 @@
+ #include <console.h>
+ #include <lib.h>
+ 
++#include <netfront.h>
++
+ #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+ 
+ extern void print_runqueue(void);
++extern void dump_single_netif(char *);
+ 
+ typedef struct _key_handler_t {
+     unsigned char key;
+     void (*op)(unsigned char key);
++    char *desc;
+ } key_handler_t;
+ 
+-key_handler_t dummy_handler = {0, NULL};
++static key_handler_t *key_handlers[256];
+ 
+ static void monitor(unsigned char key)
+ {
+     print_runqueue();
+ }
+ 
++static void netif_dump(unsigned char key)
++{
++    dump_single_netif(NETIF0_NAME);
++    dump_single_netif(NETIF1_NAME);
++}
++
+ static void manual(unsigned char key)
+ {
++    int i;
+     printk("'h' pressed -> showing installed handlers \n");
++    for (i = 0; i < ARRAY_SIZE(key_handlers); i++) {
++        if (key_handlers[i] != NULL) {
++            printk(" key '%c' => %s \n", i, key_handlers[i]->desc);
++        }
++    }
+ }
+ 
+-static key_handler_t key_handlers[256];
++static key_handler_t help_keyhandler = {
++    .key = 'h',
++    .op = manual,
++    .desc = "show this information"
++};
++
++static key_handler_t monitor_keyhandler = {
++    .key = 'm',
++    .op = monitor,
++    .desc = "system resources monitor"
++};
++
++static key_handler_t netif_keyhandler = {
++    .key = 'n',
++    .op = netif_dump,
++    .desc = "show network configuration"
++};
+ 
+-static void register_keyhandler(key_handler_t *handler, unsigned char key, void (*op)(unsigned char key))
++static void register_keyhandler(key_handler_t *handler, unsigned char key)
+ {
+-    handler->key = key;
+-    handler->op = op;
++    key_handlers[key] = handler;
+ }
+ 
+ void init_key_handlers(void)
+@@ -35,22 +66,26 @@ void init_key_handlers(void)
+     int i = 0;
+     for (i = 0; i < ARRAY_SIZE(key_handlers); i++)
+     {
+-        memcpy(&key_handlers[i], &dummy_handler, sizeof(key_handler_t));
++        key_handlers[i] = NULL;
+     }
+-    register_keyhandler(&key_handlers['m'], 'm', monitor);
+-    register_keyhandler(&key_handlers['h'], 'h', manual);
++    register_keyhandler(&help_keyhandler, 'h');
++    register_keyhandler(&monitor_keyhandler, 'm');
++    register_keyhandler(&netif_keyhandler, 'n');
+ }
+ 
+ void console_input(char * buffer, unsigned len)
+ {
+-    unsigned char key = buffer[0];
+-    switch(key) {
+-        case 'm':
+-        case 'h':
+-            key_handlers[key].op(key);
+-            break;
+-        default:
+-            printk("Unknown key pressed \n");
+-            break;
++    if (len > 0) {
++        unsigned char key = buffer[0];
++        switch(key) {
++            case 'h':
++            case 'm':
++            case 'n':
++                key_handlers[key]->op(key);
++                break;
++            default:
++                printk("Unknown key pressed \n");
++                break;
++        }
+     }
+ }
+diff --git a/lwip-net.c b/lwip-net.c
+index 5c46781..8913555 100644
+--- a/lwip-net.c
++++ b/lwip-net.c
+@@ -42,6 +42,7 @@
+  */
+ 
+ #include <os.h>
++#include <lib.h>
+ 
+ #include "lwip/opt.h"
+ #include "lwip/def.h"
+@@ -59,6 +60,7 @@
+ #include <lwip/tcp.h>
+ #include <lwip/netif.h>
+ #include <lwip/dhcp.h>
++#include <ipv4/lwip/inet.h>
+ 
+ #include "netif/etharp.h"
+ 
+@@ -73,6 +75,8 @@
+ #define IF_IPADDR  0x00000000
+ #define IF_NETMASK 0x00000000
+ 
++static void netif_set_name(struct netif *netif, char *name);
++
+ /* Only have one network interface at a time. */
+ static struct netif *the_interface = NULL;
+ 
+@@ -368,8 +372,8 @@ void start_networking(void)
+   tprintk("TCP/IP bringup begins.\n");
+   
+   netif = xmalloc(struct netif);
+-  tcpip_init(tcpip_bringup_finished, netif);
+-    
++  netif_set_name(netif, NETIF0_NAME);
++  tcpip_init(tcpip_bringup_finished, netif); 
+   netif_add(netif, &ipaddr, &netmask, &gw, rawmac, 
+             netif_netfront_init, ip_input);
+   netif_set_default(netif);
+@@ -387,3 +391,24 @@ void stop_networking(void)
+   if (dev)
+     shutdown_netfront(dev);
+ }
++
++static void netif_set_name(struct netif *netif, char *name)
++{
++    //TODO: name format check
++    netif->num = name[2] - '0';
++    netif->name[0] = name[0];
++    netif->name[1] = name[1];
++}
++
++void dump_single_netif(char *name)
++{
++    struct netif *netif;
++    struct in_addr ipaddr;
++
++    netif = netif_find(name);
++    if (netif) {
++        printk("Interface %s configuration, ", name);
++        ipaddr.s_addr = netif->ip_addr.addr;
++        printk("IP %s \n", inet_ntoa(ipaddr));
++    }
++}
+-- 
+1.7.1
+
