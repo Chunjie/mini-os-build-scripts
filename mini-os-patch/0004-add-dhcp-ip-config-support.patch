@@ -1,0 +1,139 @@
+From 3e4e59c7c45d5bf6344fd3aaa6adf2243156ffdc Mon Sep 17 00:00:00 2001
+From: Chunjie Zhu <chunjie.zhu@xxx.com>
+Date: Sat, 26 Dec 2015 03:59:05 -0500
+Subject: [PATCH] add dhcp ip config support
+
+---
+ Makefile           |    1 +
+ include/netfront.h |    2 ++
+ kernel.c           |    2 +-
+ lwip-dhcp.c        |   52 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ lwip-net.c         |    9 ++++++---
+ 5 files changed, 62 insertions(+), 4 deletions(-)
+ create mode 100644 lwip-dhcp.c
+
+diff --git a/Makefile b/Makefile
+index 6ca810b..a27de01 100644
+--- a/Makefile
++++ b/Makefile
+@@ -154,6 +154,7 @@ LWO	:= $(patsubst %.c,%.o,$(LWC))
+ LWO	+= $(OBJ_DIR)/lwip-arch.o
+ ifeq ($(CONFIG_NETFRONT),y)
+ LWO += $(OBJ_DIR)/lwip-net.o
++LWO += $(OBJ_DIR)/lwip-dhcp.o
+ endif
+ 
+ $(OBJ_DIR)/lwip.a: $(LWO)
+diff --git a/include/netfront.h b/include/netfront.h
+index 2b95da9..fced785 100644
+--- a/include/netfront.h
++++ b/include/netfront.h
+@@ -20,5 +20,7 @@ extern struct wait_queue_head netfront_queue;
+ void start_networking(void);
+ void stop_networking(void);
+ 
++void system_dhcp_init(struct netif* netif);
++
+ void networking_set_addr(struct ip_addr *ipaddr, struct ip_addr *netmask, struct ip_addr *gw);
+ #endif
+diff --git a/kernel.c b/kernel.c
+index b2d84fa..ff8ad2b 100644
+--- a/kernel.c
++++ b/kernel.c
+@@ -152,7 +152,7 @@ void start_kernel(void)
+     create_thread("shutdown", shutdown_thread, NULL);
+ #endif
+ 
+-    create_thread("monitor", resource_usage_monitor, NULL);
++    //create_thread("monitor", resource_usage_monitor, NULL);
+ 
+     /* Call (possibly overridden) app_main() */
+     app_main(&start_info);
+diff --git a/lwip-dhcp.c b/lwip-dhcp.c
+new file mode 100644
+index 0000000..3bcf5c3
+--- /dev/null
++++ b/lwip-dhcp.c
+@@ -0,0 +1,52 @@
++#include <lwip/mem.h>
++#include <lwip/tcpip.h>
++#include <lwip/dhcp.h>
++
++#include <sched.h>
++#include <console.h>
++
++#include <netfront.h>
++
++#define DHCP_TIMEOUT_MS 5000
++
++static void netif_config_thread(void* arg)
++{
++    struct netif* netif = (struct netif*)arg;
++    int mscnt = 0;
++
++    tprintk("starting dhcpd ... \n");
++    dhcp_start(netif);
++    while(1) {
++        msleep(DHCP_FINE_TIMER_MSECS);
++        dhcp_fine_tmr();
++        mscnt += DHCP_FINE_TIMER_MSECS;
++        if (mscnt >= DHCP_COARSE_TIMER_SECS * 1000) {
++            dhcp_coarse_tmr();
++            mscnt = 0;
++        }
++    }
++}
++
++void system_dhcp_init(struct netif* netif)
++{
++    int mscnt = 0;
++
++    create_thread("dhcpd", netif_config_thread, (void*)netif);
++
++    //wait for dhcp ip configuration
++    while (1) {
++        msleep(DHCP_FINE_TIMER_MSECS);
++        if (netif->ip_addr.addr) {
++            tprintk("dhcp request success \n");
++            break;
++        }
++        mscnt += DHCP_FINE_TIMER_MSECS;
++        if (mscnt >= DHCP_TIMEOUT_MS) {
++            tprintk("error: dhcp request timed out \n");
++            return;
++        }
++    }
++    tprintk("ip configuration done \n");
++    tprintk("IP %x netmask %x gateway %x.\n",
++        ntohl(netif->ip_addr.addr), ntohl(netif->netmask.addr), ntohl(netif->gw.addr));
++}
+diff --git a/lwip-net.c b/lwip-net.c
+index 672e8ee..5c46781 100644
+--- a/lwip-net.c
++++ b/lwip-net.c
+@@ -68,8 +68,10 @@
+ #define IFNAME0 'e'
+ #define IFNAME1 'n'
+ 
+-#define IF_IPADDR      0xc0a80164  //addr: 192.168.1.100
+-#define IF_NETMASK     0xffffff00  //mask: 255.255.255.0
++//#define IF_IPADDR      0xc0a80164  //addr: 192.168.1.100
++//#define IF_NETMASK     0xffffff00  //mask: 255.255.255.0
++#define IF_IPADDR  0x00000000
++#define IF_NETMASK 0x00000000
+ 
+ /* Only have one network interface at a time. */
+ static struct netif *the_interface = NULL;
+@@ -371,7 +373,8 @@ void start_networking(void)
+   netif_add(netif, &ipaddr, &netmask, &gw, rawmac, 
+             netif_netfront_init, ip_input);
+   netif_set_default(netif);
+-  netif_set_up(netif);
++  system_dhcp_init(netif);
++  //netif_set_up(netif);
+ 
+   down(&tcpip_is_up);
+ 
+-- 
+1.7.1
+

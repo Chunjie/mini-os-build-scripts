@@ -16,6 +16,7 @@ if [ ! -d mini-os-unikernel ]; then
     git apply $CWD/mini-os-patch/0001-add-a-global-system-monitor-thread.patch
     git apply $CWD/mini-os-patch/0002-set-a-global-ip-address.patch
     git apply $CWD/mini-os-patch/0003-add-key-handler-to-display-system-status.patch
+    git apply $CWD/mini-os-patch/0004-add-dhcp-ip-config-support.patch
 fi
 
 cd /local/build
