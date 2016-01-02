@@ -1,0 +1,20 @@
+diff --git a/src/core/tcp_in.c b/src/core/tcp_in.c
+index 51e8775..7792dfc 100644
+--- a/src/core/tcp_in.c
++++ b/src/core/tcp_in.c
+@@ -130,6 +130,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
+     return;
+   }
+ 
++if (0) {
+ #if CHECKSUM_CHECK_TCP
+   /* Verify TCP checksum. */
+   if (inet_chksum_pseudo(p, (struct ip_addr *)&(iphdr->src),
+@@ -148,6 +149,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
+     return;
+   }
+ #endif
++}
+ 
+   /* Move the payload pointer in the pbuf so that it points to the
+      TCP data instead of the TCP header. */
