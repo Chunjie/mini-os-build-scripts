@@ -12,6 +12,7 @@
 ###Xen minios stubdom
 1. see xen/stubdom/Makefile c-stubdom target, LDFLAGS does not contain --dynamic-linker, the output mini-os binary is statically linked executable
 2. autoconf configure.ac > configure, here autoconf version must >= 2.67
+3. how to link newlib.a, see stubdom/Makefile, TARGET_LDFLAGS
 
 ###NOTE
 1. lwIP (v1.4.1) misses sem_wait symbol definition, build failure !!!
