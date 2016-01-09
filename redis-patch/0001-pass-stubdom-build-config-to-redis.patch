@@ -1,0 +1,30 @@
+From e2a4f49ab9a9599523cb615347f24e943ee4966a Mon Sep 17 00:00:00 2001
+From: Chunjie Zhu <chunjie.zhu@xxx.com>
+Date: Sat, 9 Jan 2016 05:11:58 -0500
+Subject: [PATCH] pass stubdom build config to redis
+
+---
+ src/Makefile |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/src/Makefile b/src/Makefile
+index a65e767..95594cb 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -49,8 +49,11 @@ endif
+ # Override default settings if possible
+ -include .make-settings
+ 
+-FINAL_CFLAGS=$(STD) $(WARN) $(OPT) $(DEBUG) $(CFLAGS) $(REDIS_CFLAGS)
+-FINAL_LDFLAGS=$(LDFLAGS) $(REDIS_LDFLAGS) $(DEBUG)
++EXTRA_CFLAGS=$(DEF_CFLAGS) $(DEF_CPPFLAGS)
++EXTRA_LDFLAGS=$(DEF_LDFLAGS)
++
++FINAL_CFLAGS=$(STD) $(WARN) $(OPT) $(DEBUG) $(CFLAGS) $(REDIS_CFLAGS) $(EXTRA_CFLAGS)
++FINAL_LDFLAGS=$(LDFLAGS) $(REDIS_LDFLAGS) $(DEBUG) $(EXTRA_LDFLAGS)
+ FINAL_LIBS=-lm
+ DEBUG=-g -ggdb
+ 
+-- 
+1.7.1
+
