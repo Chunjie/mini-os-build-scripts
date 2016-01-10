@@ -1,30 +1,71 @@
-From e2a4f49ab9a9599523cb615347f24e943ee4966a Mon Sep 17 00:00:00 2001
+From f6db0c124d6d1c21dbae44e6deee7ea74ac28d8b Mon Sep 17 00:00:00 2001
 From: Chunjie Zhu <chunjie.zhu@xxx.com>
 Date: Sat, 9 Jan 2016 05:11:58 -0500
 Subject: [PATCH] pass stubdom build config to redis
 
 ---
- src/Makefile |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ deps/Makefile         |    2 +-
+ deps/lua/src/Makefile |    5 +++--
+ src/Makefile          |   10 +++++++---
+ 3 files changed, 11 insertions(+), 6 deletions(-)
 
+diff --git a/deps/Makefile b/deps/Makefile
+index 1f623ea..5be9cc7 100644
+--- a/deps/Makefile
++++ b/deps/Makefile
+@@ -68,7 +68,7 @@ ARFLAGS=rcu
+ 
+ lua: .make-prerequisites
+ 	@printf '%b %b\n' $(MAKECOLOR)MAKE$(ENDCOLOR) $(BINCOLOR)$@$(ENDCOLOR)
+-	cd lua/src && $(MAKE) all CFLAGS="$(LUA_CFLAGS)" MYLDFLAGS="$(LUA_LDFLAGS)" AR="$(AR) $(ARFLAGS)"
++	cd lua/src && $(MAKE) all CFLAGS="$(LUA_CFLAGS)" MYLIBS="-lc" MYLDFLAGS="$(LUA_LDFLAGS)" AR="$(AR) $(ARFLAGS)"
+ 
+ .PHONY: lua
+ 
+diff --git a/deps/lua/src/Makefile b/deps/lua/src/Makefile
+index f3bba2f..8480725 100644
+--- a/deps/lua/src/Makefile
++++ b/deps/lua/src/Makefile
+@@ -37,7 +37,8 @@ LUAC_T=	luac
+ LUAC_O=	luac.o print.o
+ 
+ ALL_O= $(CORE_O) $(LIB_O) $(LUA_O) $(LUAC_O)
+-ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)
++# ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)
++ALL_T= $(LUA_A)
+ ALL_A= $(LUA_A)
+ 
+ default: $(PLAT)
+@@ -53,7 +54,7 @@ $(LUA_A): $(CORE_O) $(LIB_O)
+ 	$(RANLIB) $@
+ 
+ $(LUA_T): $(LUA_O) $(LUA_A)
+-	$(CC) -o $@ $(MYLDFLAGS) $(LUA_O) $(LUA_A) $(LIBS)
++	$(CC) -o $@ $(MYLDFLAGS) -nostdlib -L/root/xen-for-minios/stubdom/cross-root-x86_64/x86_64-xen-elf/lib $(LUA_O) $(LUA_A) $(LIBS)
+ 
+ $(LUAC_T): $(LUAC_O) $(LUA_A)
+ 	$(CC) -o $@ $(MYLDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS)
 diff --git a/src/Makefile b/src/Makefile
-index a65e767..95594cb 100644
+index a65e767..0194f26 100644
 --- a/src/Makefile
 +++ b/src/Makefile
-@@ -49,8 +49,11 @@ endif
+@@ -49,9 +49,13 @@ endif
  # Override default settings if possible
  -include .make-settings
  
 -FINAL_CFLAGS=$(STD) $(WARN) $(OPT) $(DEBUG) $(CFLAGS) $(REDIS_CFLAGS)
 -FINAL_LDFLAGS=$(LDFLAGS) $(REDIS_LDFLAGS) $(DEBUG)
-+EXTRA_CFLAGS=$(DEF_CFLAGS) $(DEF_CPPFLAGS)
-+EXTRA_LDFLAGS=$(DEF_LDFLAGS)
+-FINAL_LIBS=-lm
++CFLAGS=
++MINIOS_MY_CFLAGS=$(CPPFLAGS)
++MINIOS_MY_LDFLAGS=$(LDFLAGS)
 +
-+FINAL_CFLAGS=$(STD) $(WARN) $(OPT) $(DEBUG) $(CFLAGS) $(REDIS_CFLAGS) $(EXTRA_CFLAGS)
-+FINAL_LDFLAGS=$(LDFLAGS) $(REDIS_LDFLAGS) $(DEBUG) $(EXTRA_LDFLAGS)
- FINAL_LIBS=-lm
++FINAL_CFLAGS=$(STD) $(WARN) $(OPT) $(DEBUG) $(CFLAGS) $(REDIS_CFLAGS) $(MINIOS_MY_CFLAGS)
++FINAL_LDFLAGS=$(LDFLAGS) $(REDIS_LDFLAGS) $(DEBUG) $(MINIOS_MY_LDFLAGS)
++FINAL_LIBS=-lm -lc
  DEBUG=-g -ggdb
  
+ ifeq ($(uname_S),SunOS)
 -- 
 1.7.1
 
