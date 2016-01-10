@@ -1,16 +1,16 @@
-From f6db0c124d6d1c21dbae44e6deee7ea74ac28d8b Mon Sep 17 00:00:00 2001
+From 0396b8ff45cce835e0f58dd26ac69372a2e3b935 Mon Sep 17 00:00:00 2001
 From: Chunjie Zhu <chunjie.zhu@xxx.com>
-Date: Sat, 9 Jan 2016 05:11:58 -0500
+Date: Sun, 10 Jan 2016 10:40:32 -0500
 Subject: [PATCH] pass stubdom build config to redis
 
 ---
- deps/Makefile         |    2 +-
+ deps/Makefile         |    4 ++--
  deps/lua/src/Makefile |    5 +++--
  src/Makefile          |   10 +++++++---
- 3 files changed, 11 insertions(+), 6 deletions(-)
+ 3 files changed, 12 insertions(+), 7 deletions(-)
 
 diff --git a/deps/Makefile b/deps/Makefile
-index 1f623ea..5be9cc7 100644
+index 1f623ea..5b2c89e 100644
 --- a/deps/Makefile
 +++ b/deps/Makefile
 @@ -68,7 +68,7 @@ ARFLAGS=rcu
@@ -22,6 +22,15 @@ index 1f623ea..5be9cc7 100644
  
  .PHONY: lua
  
+@@ -77,7 +77,7 @@ JEMALLOC_LDFLAGS= $(LDFLAGS)
+ 
+ jemalloc: .make-prerequisites
+ 	@printf '%b %b\n' $(MAKECOLOR)MAKE$(ENDCOLOR) $(BINCOLOR)$@$(ENDCOLOR)
+-	cd jemalloc && ./configure --with-jemalloc-prefix=je_ --enable-cc-silence CFLAGS="$(JEMALLOC_CFLAGS)" LDFLAGS="$(JEMALLOC_LDFLAGS)"
++	cd jemalloc && ./configure --with-jemalloc-prefix=je_ --enable-cc-silence CFLAGS="$(JEMALLOC_CFLAGS)" CPPFLAGS="" LDFLAGS="$(JEMALLOC_LDFLAGS)"
+ 	cd jemalloc && $(MAKE) CFLAGS="$(JEMALLOC_CFLAGS)" LDFLAGS="$(JEMALLOC_LDFLAGS)" lib/libjemalloc.a
+ 
+ .PHONY: jemalloc
 diff --git a/deps/lua/src/Makefile b/deps/lua/src/Makefile
 index f3bba2f..8480725 100644
 --- a/deps/lua/src/Makefile
