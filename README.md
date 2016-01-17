@@ -21,3 +21,4 @@
 4. newlib does not have stddef.h and stdarg.h, they are supplied by gcc, we have to add '-isystem /usr/lib/gcc/arch/version/include' to compile options if we compile programs with newlib
 5. newlib 1.16.0 does not have strings.h
 6. -std=c99 (keyword: __asm) -> -std=gnu99 (keyword: asm)
+7. unix socket is not supported in either mini-os or lwip, remove unix socket code from application
