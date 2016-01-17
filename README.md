@@ -20,3 +20,4 @@
 3. tprintk cannot be used inside evtchn (pv irq) handler because this function access 'current' variable
 4. newlib does not have stddef.h and stdarg.h, they are supplied by gcc, we have to add '-isystem /usr/lib/gcc/arch/version/include' to compile options if we compile programs with newlib
 5. newlib 1.16.0 does not have strings.h
+6. -std=c99 (keyword: __asm) -> -std=gnu99 (keyword: asm)
